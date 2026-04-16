@@ -49,20 +49,15 @@
   /* HEADER */
   .header {
     text-align: center;
-    padding: 2.5rem 1rem 1.5rem;
+    padding: 1.25rem 1rem 0.75rem;
   }
   .header h1 {
     font-family: 'Cinzel', serif;
     font-weight: 700;
-    font-size: clamp(1.6rem, 4.5vw, 2.4rem);
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
     letter-spacing: 0.1em;
     color: var(--text);
-    margin-bottom: 0.35rem;
-  }
-  .header .subtitle {
-    color: var(--text-dim);
-    font-size: 0.9rem;
-    letter-spacing: 0.03em;
+    margin: 0;
   }
 
   /* LEDGER */
@@ -152,20 +147,19 @@
     position: relative;
   }
 
-  /* Small "+" floating off the right edge of each row. Desktop only.
-     Shown only on the last week of non-final rows; the big end pill
-     handles the final row. */
-  .week-add-side { display: none; }
+  /* Small "+" pinned to the right edge of each row (desktop only).
+     One per non-final row; the big end pill handles the final row.
+     These are absolutely positioned so they never wrap. */
+  .row-end-add { display: none; }
   @media (min-width: 768px) {
-    .weeks { padding-right: 44px; }
-    .week-add-side {
+    .weeks { padding-right: 48px; }
+    .row-end-add {
       display: flex;
       position: absolute;
-      right: -36px;
-      top: 50%;
+      right: 6px;
+      width: 34px;
+      height: 34px;
       transform: translateY(-50%);
-      width: 28px;
-      height: 28px;
       border-radius: 50%;
       background: var(--bg-2);
       border: 1px dashed var(--border-hi);
@@ -173,14 +167,14 @@
       cursor: pointer;
       align-items: center;
       justify-content: center;
-      font-size: 1.1rem;
+      font-size: 1.2rem;
       font-weight: 400;
       line-height: 1;
       transition: all 0.15s;
       z-index: 5;
       padding: 0;
     }
-    .week-add-side:hover {
+    .row-end-add:hover {
       background: var(--bg-3);
       border-style: solid;
       border-color: var(--accent);
@@ -244,21 +238,18 @@
     border-color: var(--danger);
   }
 
-  /* GATES */
+  /* GATES — stacked vertically so they fit comfortably in the narrow pill */
   .gates {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 0.9rem;
-    margin-bottom: 1.25rem;
-  }
-  @media (max-width: 600px) {
-    .gates { grid-template-columns: 1fr; }
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.1rem;
   }
 
   .gate {
     background: var(--bg-2);
     border: 1px solid var(--border);
-    padding: 0.9rem;
+    padding: 0.75rem 0.9rem;
     border-radius: 16px;
   }
   .gate-label {
@@ -907,13 +898,13 @@ function Gate({ gateNum, gate, canSkip, onDifficultyChange, onExtraChange }) {
           onChange={e => onExtraChange(e.target.checked)}
           onClick={e => e.stopPropagation()}
         />
-        <label>Buy extra reward (×2)</label>
+        <label>Buy box (×2)</label>
       </div>
     </div>
   );
 }
 
-function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, isRowEnd, onAddWeek }) {
+function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
   const avail = useMemo(() => availabilityAt(weeks, idx), [weeks, idx]);
 
   const setGate = (gateNum, patch) => {
@@ -938,14 +929,6 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, isRowEnd, 
 
   return (
     <div className={`week ${result.anyBroken ? 'broken' : ''}`} data-week-id={week.id}>
-      {isRowEnd && (
-        <button
-          className="week-add-side"
-          onClick={onAddWeek}
-          aria-label="Add week"
-          title="Add week"
-        >+</button>
-      )}
       <div className="week-header">
         <div className="week-title">
           <span>Week</span>
@@ -1071,7 +1054,7 @@ function makeEmptyWeek() {
 function App() {
   const [weeks, setWeeks] = useState(() => [makeEmptyWeek()]);
   const [showConfig, setShowConfig] = useState(false);
-  const [rowEndIds, setRowEndIds] = useState(() => new Set());
+  const [rowButtons, setRowButtons] = useState([]);
   const justAddedRef = useRef(false);
   const weeksRef = useRef(null);
 
@@ -1086,22 +1069,29 @@ function App() {
     els[els.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [weeks.length]);
 
-  // Detect which weeks are at the end of a row (excluding the very last one,
-  // since the big end pill handles that). Recomputes on resize + week changes.
+  // Measure each row's Y position (for one floating '+' per non-final row).
+  // Skips the row containing the last week, since the big end pill handles it.
   useEffect(() => {
     const container = weeksRef.current;
     if (!container) return;
     const compute = () => {
       const cards = Array.from(container.querySelectorAll('[data-week-id]'));
-      const next = new Set();
-      for (let i = 0; i < cards.length - 1; i++) {
-        const topHere = Math.round(cards[i].getBoundingClientRect().top);
-        const topNext = Math.round(cards[i + 1].getBoundingClientRect().top);
-        if (topNext > topHere) next.add(cards[i].dataset.weekId);
-      }
-      setRowEndIds(prev => {
-        if (prev.size === next.size && [...prev].every(id => next.has(id))) return prev;
-        return next;
+      if (!cards.length) { setRowButtons([]); return; }
+      const cRect = container.getBoundingClientRect();
+      const rows = new Map();       // top → {top, height}
+      cards.forEach(card => {
+        const r = card.getBoundingClientRect();
+        const top = Math.round(r.top);
+        const existing = rows.get(top);
+        if (!existing) rows.set(top, { top, height: r.height });
+        else existing.height = Math.max(existing.height, r.height);
+      });
+      const sorted = [...rows.values()].sort((a, b) => a.top - b.top);
+      const nonFinal = sorted.slice(0, -1);
+      const btns = nonFinal.map(r => ({ y: r.top - cRect.top + r.height / 2 }));
+      setRowButtons(prev => {
+        if (prev.length === btns.length && prev.every((p, i) => Math.round(p.y) === Math.round(btns[i].y))) return prev;
+        return btns;
       });
     };
     compute();
@@ -1131,7 +1121,6 @@ function App() {
     <>
       <div className="header">
         <h1>Serca's Ledger</h1>
-        <div className="subtitle">A weekly plan for Destined Tremor crafts & breakthroughs</div>
       </div>
 
       <div className="ledger">
@@ -1168,8 +1157,6 @@ function App() {
               result={sim.weekResults[i]}
               weeks={weeks}
               isOnly={weeks.length === 1}
-              isRowEnd={rowEndIds.has(w.id)}
-              onAddWeek={addWeek}
               onUpdate={(next) => updateWeek(i, next)}
               onDelete={() => deleteWeek(i)}
             />
@@ -1178,6 +1165,16 @@ function App() {
             <span className="add-week-icon">+</span>
             <span>Add Week</span>
           </button>
+          {rowButtons.map((b, i) => (
+            <button
+              key={`row-${i}`}
+              className="row-end-add"
+              style={{ top: `${b.y}px` }}
+              onClick={addWeek}
+              aria-label="Add week"
+              title="Add week"
+            >+</button>
+          ))}
         </div>
       </div>
 
