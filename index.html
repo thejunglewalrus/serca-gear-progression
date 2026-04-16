@@ -933,7 +933,6 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, onAddWeek 
   return (
     <div className={`week ${result.anyBroken ? 'broken' : ''}`} data-week-id={week.id}>
       <button className="week-add-vert top" onClick={onAddWeek} title="Add week">+ Add</button>
-      <button className="week-add-vert bottom" onClick={onAddWeek} title="Add week">+ Add</button>
       <div className="week-header">
         <div className="week-title">
           <span>Week</span>
@@ -942,23 +941,6 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, onAddWeek 
         {!isOnly && (
           <button className="week-delete" onClick={onDelete}>Delete</button>
         )}
-      </div>
-
-      <div className="gates">
-        <Gate
-          gateNum={1}
-          gate={week.gates[1]}
-          canSkip={false}
-          onDifficultyChange={(d) => setGate(1, { difficulty: d })}
-          onExtraChange={(v) => setGate(1, { extra: v })}
-        />
-        <Gate
-          gateNum={2}
-          gate={week.gates[2]}
-          canSkip={true}
-          onDifficultyChange={(d) => setGate(2, { difficulty: d })}
-          onExtraChange={(v) => setGate(2, { extra: v })}
-        />
       </div>
 
       <div className="actions-section-label">Craft</div>
@@ -1011,6 +993,23 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, onAddWeek 
             </button>
           );
         })}
+      </div>
+
+      <div className="gates">
+        <Gate
+          gateNum={1}
+          gate={week.gates[1]}
+          canSkip={false}
+          onDifficultyChange={(d) => setGate(1, { difficulty: d })}
+          onExtraChange={(v) => setGate(1, { extra: v })}
+        />
+        <Gate
+          gateNum={2}
+          gate={week.gates[2]}
+          canSkip={true}
+          onDifficultyChange={(d) => setGate(2, { difficulty: d })}
+          onExtraChange={(v) => setGate(2, { extra: v })}
+        />
       </div>
 
       <div className="week-running">
