@@ -152,15 +152,39 @@
     position: relative;
   }
 
-  /* Desktop: float Add Week to top-right; weeks row reserves space for it. */
+  /* Small "+" floating off the right edge of each row. Desktop only.
+     Shown only on the last week of non-final rows; the big end pill
+     handles the final row. */
+  .week-add-side { display: none; }
   @media (min-width: 768px) {
-    .weeks { padding-right: 180px; }
-    .add-week {
+    .weeks { padding-right: 44px; }
+    .week-add-side {
+      display: flex;
       position: absolute;
-      top: 0;
-      right: 0;
-      width: 160px;
-      min-height: 220px;
+      right: -36px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-2);
+      border: 1px dashed var(--border-hi);
+      color: var(--accent);
+      cursor: pointer;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      font-weight: 400;
+      line-height: 1;
+      transition: all 0.15s;
+      z-index: 5;
+      padding: 0;
+    }
+    .week-add-side:hover {
+      background: var(--bg-3);
+      border-style: solid;
+      border-color: var(--accent);
+      color: var(--text);
     }
   }
 
@@ -889,7 +913,7 @@ function Gate({ gateNum, gate, canSkip, onDifficultyChange, onExtraChange }) {
   );
 }
 
-function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
+function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, isRowEnd, onAddWeek }) {
   const avail = useMemo(() => availabilityAt(weeks, idx), [weeks, idx]);
 
   const setGate = (gateNum, patch) => {
@@ -913,7 +937,15 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
   const slotName = (id) => CONFIG.slots.find(s => s.id === id)?.name || id;
 
   return (
-    <div className={`week ${result.anyBroken ? 'broken' : ''}`}>
+    <div className={`week ${result.anyBroken ? 'broken' : ''}`} data-week-id={week.id}>
+      {isRowEnd && (
+        <button
+          className="week-add-side"
+          onClick={onAddWeek}
+          aria-label="Add week"
+          title="Add week"
+        >+</button>
+      )}
       <div className="week-header">
         <div className="week-title">
           <span>Week</span>
@@ -1039,7 +1071,9 @@ function makeEmptyWeek() {
 function App() {
   const [weeks, setWeeks] = useState(() => [makeEmptyWeek()]);
   const [showConfig, setShowConfig] = useState(false);
+  const [rowEndIds, setRowEndIds] = useState(() => new Set());
   const justAddedRef = useRef(false);
+  const weeksRef = useRef(null);
 
   const sim = useMemo(() => simulate(weeks), [weeks]);
 
@@ -1050,6 +1084,30 @@ function App() {
     justAddedRef.current = false;
     const els = document.querySelectorAll('.week');
     els[els.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [weeks.length]);
+
+  // Detect which weeks are at the end of a row (excluding the very last one,
+  // since the big end pill handles that). Recomputes on resize + week changes.
+  useEffect(() => {
+    const container = weeksRef.current;
+    if (!container) return;
+    const compute = () => {
+      const cards = Array.from(container.querySelectorAll('[data-week-id]'));
+      const next = new Set();
+      for (let i = 0; i < cards.length - 1; i++) {
+        const topHere = Math.round(cards[i].getBoundingClientRect().top);
+        const topNext = Math.round(cards[i + 1].getBoundingClientRect().top);
+        if (topNext > topHere) next.add(cards[i].dataset.weekId);
+      }
+      setRowEndIds(prev => {
+        if (prev.size === next.size && [...prev].every(id => next.has(id))) return prev;
+        return next;
+      });
+    };
+    compute();
+    const ro = new ResizeObserver(compute);
+    ro.observe(container);
+    return () => ro.disconnect();
   }, [weeks.length]);
 
   const updateWeek = (idx, next) => setWeeks(ws => ws.map((w, i) => i === idx ? next : w));
@@ -1101,7 +1159,7 @@ function App() {
       </div>
 
       <div className="weeks-scroll">
-        <div className="weeks">
+        <div className="weeks" ref={weeksRef}>
           {weeks.map((w, i) => (
             <Week
               key={w.id}
@@ -1110,6 +1168,8 @@ function App() {
               result={sim.weekResults[i]}
               weeks={weeks}
               isOnly={weeks.length === 1}
+              isRowEnd={rowEndIds.has(w.id)}
+              onAddWeek={addWeek}
               onUpdate={(next) => updateWeek(i, next)}
               onDelete={() => deleteWeek(i)}
             />
