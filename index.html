@@ -149,6 +149,19 @@
     flex-wrap: wrap;
     align-items: stretch;
     gap: 1.1rem;
+    position: relative;
+  }
+
+  /* Desktop: float Add Week to top-right; weeks row reserves space for it. */
+  @media (min-width: 768px) {
+    .weeks { padding-right: 180px; }
+    .add-week {
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 160px;
+      min-height: 220px;
+    }
   }
 
   .week {
@@ -611,7 +624,7 @@
 <div id="root"></div>
 
 <script type="text/babel">
-const { useState, useMemo } = React;
+const { useState, useMemo, useRef, useEffect } = React;
 
 /* ────────────────────────────────────────────────────────────
  * CONFIG — All tunable numbers. Edit here if the game changes.
@@ -1026,13 +1039,24 @@ function makeEmptyWeek() {
 function App() {
   const [weeks, setWeeks] = useState(() => [makeEmptyWeek()]);
   const [showConfig, setShowConfig] = useState(false);
+  const justAddedRef = useRef(false);
 
   const sim = useMemo(() => simulate(weeks), [weeks]);
+
+  // When a week is appended, scroll to it — no-op if it's already visible
+  // on the current row; scrolls down when the new week wrapped onto a new row.
+  useEffect(() => {
+    if (!justAddedRef.current) return;
+    justAddedRef.current = false;
+    const els = document.querySelectorAll('.week');
+    els[els.length - 1]?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, [weeks.length]);
 
   const updateWeek = (idx, next) => setWeeks(ws => ws.map((w, i) => i === idx ? next : w));
   const deleteWeek = (idx)       => setWeeks(ws => ws.filter((_, i) => i !== idx));
   const addWeek = () => {
     const last = weeks[weeks.length - 1];
+    justAddedRef.current = true;
     setWeeks(ws => [...ws, {
       id: `w-${Date.now()}-${Math.random()}`,
       gates: { 1: { ...last.gates[1] }, 2: { ...last.gates[2] } },
