@@ -147,39 +147,34 @@
     position: relative;
   }
 
-  /* Small "+" buttons on each pill's top and bottom edges (all viewports).
-     Always append a new week. Dim by default, highlight on hover. */
+  /* Small "add" pill buttons on each pill's top and bottom edges.
+     Styled to mirror the delete pill, always fully visible. */
   .week-add-vert {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
     background: var(--bg-1);
-    border: 1px dashed var(--border-hi);
     color: var(--accent);
+    border: 1px solid var(--border);
+    padding: 0.3rem 0.75rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.12em;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.05rem;
-    font-weight: 400;
-    line-height: 1;
     transition: all 0.15s;
+    text-transform: uppercase;
+    border-radius: 999px;
     z-index: 6;
-    padding: 0;
-    opacity: 0.45;
+    line-height: 1;
+    white-space: nowrap;
   }
   .week-add-vert:hover {
-    background: var(--bg-3);
-    border-style: solid;
-    border-color: var(--accent);
+    background: var(--accent-dim);
     color: var(--text);
-    opacity: 1;
+    border-color: var(--accent);
   }
-  .week-add-vert.top    { top: -14px; }
-  .week-add-vert.bottom { bottom: -14px; }
+  .week-add-vert.top    { top: -12px; }
+  .week-add-vert.bottom { bottom: -12px; }
 
   /* Small "+" pinned to the right edge of each row (desktop only).
      One per non-final row; the big end pill handles the final row.
@@ -937,8 +932,8 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, onAddWeek 
 
   return (
     <div className={`week ${result.anyBroken ? 'broken' : ''}`} data-week-id={week.id}>
-      <button className="week-add-vert top" onClick={onAddWeek} aria-label="Add week" title="Add week">+</button>
-      <button className="week-add-vert bottom" onClick={onAddWeek} aria-label="Add week" title="Add week">+</button>
+      <button className="week-add-vert top" onClick={onAddWeek} title="Add week">+ Add</button>
+      <button className="week-add-vert bottom" onClick={onAddWeek} title="Add week">+ Add</button>
       <div className="week-header">
         <div className="week-title">
           <span>Week</span>
