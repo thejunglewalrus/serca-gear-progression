@@ -147,6 +147,40 @@
     position: relative;
   }
 
+  /* Small "+" buttons on each pill's top and bottom edges (all viewports).
+     Always append a new week. Dim by default, highlight on hover. */
+  .week-add-vert {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--bg-1);
+    border: 1px dashed var(--border-hi);
+    color: var(--accent);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.05rem;
+    font-weight: 400;
+    line-height: 1;
+    transition: all 0.15s;
+    z-index: 6;
+    padding: 0;
+    opacity: 0.45;
+  }
+  .week-add-vert:hover {
+    background: var(--bg-3);
+    border-style: solid;
+    border-color: var(--accent);
+    color: var(--text);
+    opacity: 1;
+  }
+  .week-add-vert.top    { top: -14px; }
+  .week-add-vert.bottom { bottom: -14px; }
+
   /* Small "+" pinned to the right edge of each row (desktop only).
      One per non-final row; the big end pill handles the final row.
      These are absolutely positioned so they never wrap. */
@@ -399,6 +433,37 @@
     opacity: 0.35;
     cursor: not-allowed;
   }
+  .action-btn.committed {
+    background: rgba(155, 133, 214, 0.18);
+    border-color: var(--accent);
+    color: var(--text);
+  }
+  .action-btn.committed .action-verb { color: var(--text); }
+  .action-btn.committed .action-icon { color: var(--accent); }
+  .action-btn.committed::after {
+    content: '✓';
+    color: var(--accent);
+    font-size: 0.85rem;
+    margin-left: 0.2rem;
+  }
+  .action-btn.broken {
+    background: rgba(200, 90, 90, 0.12);
+    border-color: var(--danger);
+    color: var(--danger);
+    cursor: pointer;
+    opacity: 1;
+  }
+  .action-btn.broken .action-verb,
+  .action-btn.broken .action-icon,
+  .action-btn.broken .action-cost { color: var(--danger); }
+  .action-btn.broken .action-name { text-decoration: line-through; }
+  .action-reason {
+    font-size: 0.68rem;
+    font-style: italic;
+    font-weight: normal;
+    margin-left: 0.4rem;
+    opacity: 0.9;
+  }
   .action-icon {
     width: 22px;
     height: 22px;
@@ -423,96 +488,6 @@
     font-size: 0.75rem;
     color: var(--thorn);
     font-weight: 500;
-  }
-
-  /* COMMITTED LIST */
-  .committed {
-    display: flex;
-    flex-direction: column;
-    gap: 0.35rem;
-  }
-  .committed-item {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.55rem 0.9rem;
-    background: var(--bg-2);
-    border: 1px solid var(--border);
-    border-left: 3px solid var(--accent);
-    font-size: 0.9rem;
-    border-radius: 12px;
-    transition: all 0.2s;
-  }
-  .committed-item.broken {
-    border-color: var(--danger-deep);
-    border-left-color: var(--danger);
-    background: rgba(200, 90, 90, 0.06);
-    color: var(--text-dim);
-  }
-  .committed-item.broken .committed-text {
-    text-decoration: line-through;
-    color: var(--danger);
-  }
-  .committed-left {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    flex: 1;
-    min-width: 0;
-  }
-  .committed-icon {
-    width: 18px;
-    height: 18px;
-    color: var(--text-faint);
-    flex-shrink: 0;
-  }
-  .committed-verb {
-    font-family: 'Inter', sans-serif;
-    font-size: 0.7rem;
-    letter-spacing: 0.08em;
-    color: var(--accent);
-    text-transform: uppercase;
-    flex-shrink: 0;
-    font-weight: 600;
-  }
-  .committed-item.broken .committed-verb { color: var(--danger); }
-  .committed-cost {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    color: var(--thorn);
-    margin-right: 0.6rem;
-  }
-  .committed-remove {
-    background: transparent;
-    border: 1px solid var(--border);
-    color: var(--text-faint);
-    cursor: pointer;
-    font-size: 0.85rem;
-    width: 22px;
-    height: 22px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 999px;
-    transition: all 0.15s;
-    flex-shrink: 0;
-  }
-  .committed-remove:hover {
-    background: var(--danger-deep);
-    color: var(--text);
-    border-color: var(--danger);
-  }
-
-  .broken-note {
-    margin-top: 0.8rem;
-    padding: 0.7rem 1rem;
-    background: rgba(200, 90, 90, 0.08);
-    border: 1px solid var(--danger-deep);
-    color: var(--danger);
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.72rem;
-    letter-spacing: 0.03em;
-    border-radius: 12px;
   }
 
   .empty-msg {
@@ -826,19 +801,54 @@ function simulate(weeks) {
 }
 
 function availabilityAt(weeks, targetIdx) {
-  const truncated = weeks.slice(0, targetIdx + 1);
-  const { weekResults, ownedCraft, ownedBreakthrough } = simulate(truncated);
-  const running = weekResults[targetIdx].running;
+  const prior = targetIdx > 0
+    ? simulate(weeks.slice(0, targetIdx))
+    : { ownedCraft: new Set(), ownedBreakthrough: new Set() };
+  const priorCraft = prior.ownedCraft;
+  const priorBT = prior.ownedBreakthrough;
 
+  const targetResult = simulate(weeks.slice(0, targetIdx + 1)).weekResults[targetIdx];
+
+  const craftThisWeek = new Map();
+  const btThisWeek = new Map();
+  targetResult.actions.forEach(a => {
+    if (a.type === 'craft') craftThisWeek.set(a.slot, a);
+    else btThisWeek.set(a.slot, a);
+  });
+
+  const currentPool = totalPool(targetResult.running);
   const craftable = [];
   const breakable = [];
+
   for (const s of CONFIG.slots) {
     const cost = CONFIG.slotCost[s.id];
-    if (!ownedCraft.has(s.id)) {
-      craftable.push({ slot: s.id, name: s.name, cost, affordable: totalPool(running) >= cost });
+    const craftAction = craftThisWeek.get(s.id);
+    const btAction = btThisWeek.get(s.id);
+
+    if (!priorCraft.has(s.id)) {
+      const committed = !!craftAction && !craftAction.broken;
+      const broken = !!craftAction && craftAction.broken;
+      craftable.push({
+        slot: s.id, name: s.name, cost,
+        committed, broken,
+        reason: craftAction?.reason,
+        actionId: craftAction?.id,
+        affordable: committed || broken || currentPool >= cost,
+      });
     }
-    if (ownedCraft.has(s.id) && !ownedBreakthrough.has(s.id)) {
-      breakable.push({ slot: s.id, name: s.name, cost, affordable: totalPool(running) >= cost });
+
+    const craftedSomehow = priorCraft.has(s.id) || (craftAction && !craftAction.broken);
+    const showBreak = (craftedSomehow || btAction) && !priorBT.has(s.id);
+    if (showBreak) {
+      const committed = !!btAction && !btAction.broken;
+      const broken = !!btAction && btAction.broken;
+      breakable.push({
+        slot: s.id, name: s.name, cost,
+        committed, broken,
+        reason: btAction?.reason,
+        actionId: btAction?.id,
+        affordable: committed || broken || currentPool >= cost,
+      });
     }
   }
   return { craftable, breakable };
@@ -904,7 +914,7 @@ function Gate({ gateNum, gate, canSkip, onDifficultyChange, onExtraChange }) {
   );
 }
 
-function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
+function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly, onAddWeek }) {
   const avail = useMemo(() => availabilityAt(weeks, idx), [weeks, idx]);
 
   const setGate = (gateNum, patch) => {
@@ -925,10 +935,10 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
     onUpdate({ ...week, actions: week.actions.filter(a => a.id !== actionId) });
   };
 
-  const slotName = (id) => CONFIG.slots.find(s => s.id === id)?.name || id;
-
   return (
     <div className={`week ${result.anyBroken ? 'broken' : ''}`} data-week-id={week.id}>
+      <button className="week-add-vert top" onClick={onAddWeek} aria-label="Add week" title="Add week">+</button>
+      <button className="week-add-vert bottom" onClick={onAddWeek} aria-label="Add week" title="Add week">+</button>
       <div className="week-header">
         <div className="week-title">
           <span>Week</span>
@@ -961,19 +971,25 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
         {avail.craftable.length === 0 && (
           <div className="empty-msg">All six pieces crafted.</div>
         )}
-        {avail.craftable.map(a => (
-          <button
-            key={`c-${a.slot}`}
-            className="action-btn"
-            disabled={!a.affordable}
-            onClick={() => addAction('craft', a.slot)}
-          >
-            <span className="action-icon">{GearIcons[a.slot]}</span>
-            <span className="action-verb">Craft</span>
-            <span className="action-name">{a.name}</span>
-            <span className="action-cost">{a.cost} mats</span>
-          </button>
-        ))}
+        {avail.craftable.map(a => {
+          const onClick = () => {
+            if (a.committed || a.broken) removeAction(a.actionId);
+            else addAction('craft', a.slot);
+          };
+          const cls = `action-btn ${a.committed ? 'committed' : ''} ${a.broken ? 'broken' : ''}`;
+          const title = a.committed ? 'Click to uncommit' : (a.broken ? 'Click to remove' : undefined);
+          return (
+            <button key={`c-${a.slot}`} className={cls} disabled={!a.affordable} onClick={onClick} title={title}>
+              <span className="action-icon">{GearIcons[a.slot]}</span>
+              <span className="action-verb">Craft</span>
+              <span className="action-name">
+                {a.name}
+                {a.broken && a.reason && <span className="action-reason">· {a.reason}</span>}
+              </span>
+              <span className="action-cost">{a.cost} mats</span>
+            </button>
+          );
+        })}
       </div>
 
       <div className="actions-section-label">Breakthrough</div>
@@ -981,48 +997,26 @@ function Week({ idx, week, result, onUpdate, onDelete, weeks, isOnly }) {
         {avail.breakable.length === 0 && (
           <div className="empty-msg">No pieces ready for breakthrough. Craft first.</div>
         )}
-        {avail.breakable.map(a => (
-          <button
-            key={`b-${a.slot}`}
-            className="action-btn"
-            disabled={!a.affordable}
-            onClick={() => addAction('breakthrough', a.slot)}
-          >
-            <span className="action-icon">{GearIcons[a.slot]}</span>
-            <span className="action-verb">Break</span>
-            <span className="action-name">{a.name}</span>
-            <span className="action-cost">{a.cost} mats</span>
-          </button>
-        ))}
+        {avail.breakable.map(a => {
+          const onClick = () => {
+            if (a.committed || a.broken) removeAction(a.actionId);
+            else addAction('breakthrough', a.slot);
+          };
+          const cls = `action-btn ${a.committed ? 'committed' : ''} ${a.broken ? 'broken' : ''}`;
+          const title = a.committed ? 'Click to uncommit' : (a.broken ? 'Click to remove' : undefined);
+          return (
+            <button key={`b-${a.slot}`} className={cls} disabled={!a.affordable} onClick={onClick} title={title}>
+              <span className="action-icon">{GearIcons[a.slot]}</span>
+              <span className="action-verb">Break</span>
+              <span className="action-name">
+                {a.name}
+                {a.broken && a.reason && <span className="action-reason">· {a.reason}</span>}
+              </span>
+              <span className="action-cost">{a.cost} mats</span>
+            </button>
+          );
+        })}
       </div>
-
-      {week.actions.length > 0 && (
-        <>
-          <div className="actions-section-label">This week's commits</div>
-          <div className="committed">
-            {result.actions.map(a => (
-              <div key={a.id} className={`committed-item ${a.broken ? 'broken' : ''}`}>
-                <div className="committed-left">
-                  <span className="committed-icon">{GearIcons[a.slot]}</span>
-                  <span className="committed-verb">{a.type === 'craft' ? 'Craft' : 'Breakthrough'}</span>
-                  <span className="committed-text">{slotName(a.slot)}</span>
-                  {a.broken && <span style={{color: 'var(--danger)', fontSize: '0.72rem', fontStyle: 'italic'}}>· {a.reason}</span>}
-                </div>
-                <div style={{display: 'flex', alignItems: 'center'}}>
-                  <span className="committed-cost">{a.cost}</span>
-                  <button className="committed-remove" onClick={() => removeAction(a.id)}>×</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
-      )}
-
-      {result.anyBroken && (
-        <div className="broken-note">
-          ⚠ One or more actions above can no longer be afforded or are no longer valid. Remove them or earn more mats.
-        </div>
-      )}
 
       <div className="week-running">
         <div className="week-running-item">
@@ -1157,6 +1151,7 @@ function App() {
               result={sim.weekResults[i]}
               weeks={weeks}
               isOnly={weeks.length === 1}
+              onAddWeek={addWeek}
               onUpdate={(next) => updateWeek(i, next)}
               onDelete={() => deleteWeek(i)}
             />
