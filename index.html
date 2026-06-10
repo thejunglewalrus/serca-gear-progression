@@ -555,6 +555,22 @@
     line-height: 1;
   }
 
+  /* Walrus + palm decorations (junglewalrus brand) */
+  .header .title-row { display: flex; align-items: center; justify-content: center; gap: 16px; }
+  .palm { width: 44px; height: auto; flex: 0 0 auto; opacity: .95; filter: drop-shadow(0 2px 5px rgba(0,0,0,.45)); }
+  .palm-flip { transform: scaleX(-1); }
+  .footer-credit {
+    display: flex; align-items: center; justify-content: center; gap: 13px;
+    max-width: 640px; margin: 0 auto; text-align: left; padding: 24px 16px 8px;
+    color: var(--text-faint); font-size: 0.75rem;
+  }
+  .footer-credit a { color: var(--accent); text-decoration: none; }
+  .footer-walrus { width: 62px; height: auto; flex: 0 0 auto; filter: drop-shadow(0 3px 6px rgba(0,0,0,.45)); }
+  @media (max-width: 560px) {
+    .palm { width: 30px; } .header .title-row { gap: 9px; }
+    .footer-walrus { width: 48px; }
+  }
+
   /* FOOTER */
   .footer {
     text-align: center;
@@ -644,6 +660,14 @@
 </head>
 <body>
 <div id="root"></div>
+
+<div class="footer-credit">
+  <img class="footer-walrus" src="assets/walrus-mascot.png" alt="Junglewalrus mascot">
+  <div>
+    Weekly thorn budgets follow the official Serca acquisition tables. Spotted a bug? Find me
+    <a href="https://www.twitch.tv/thejunglewalrus" target="_blank" rel="noopener">@thejunglewalrus</a>.
+  </div>
+</div>
 
 <footer class="site-footer">
   <p>Made by <a href="https://www.twitch.tv/thejunglewalrus" rel="noopener" target="_blank">junglewalrus</a>.</p>
@@ -1172,7 +1196,11 @@ function App() {
   return (
     <>
       <div className="header">
-        <h1>Serca's Ledger</h1>
+        <div className="title-row">
+          <img className="palm" src="assets/palm.png" alt="" aria-hidden="true" />
+          <h1>Serca's Ledger</h1>
+          <img className="palm palm-flip" src="assets/palm.png" alt="" aria-hidden="true" />
+        </div>
       </div>
 
       <div className="ledger">
