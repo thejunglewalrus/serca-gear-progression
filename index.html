@@ -1302,5 +1302,69 @@ function App() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
 </script>
+
+<!-- Back-to-toolbox button. Canonical copy: https://github.com/thejunglewalrus/thejunglewalrus.github.io/blob/main/snippets/jw-back.html -->
+<a href="https://thejunglewalrus.github.io/" class="jw-back"
+   title="Back to the Junglewalrus toolbox"
+   aria-label="Back to the Junglewalrus toolbox">
+  <svg class="jw-back-icon" viewBox="0 0 24 24" width="18" height="18"
+       fill="none" stroke="currentColor" stroke-width="2.4"
+       stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"
+       focusable="false">
+    <path d="M19 12H5" />
+    <path d="M12 19l-7-7 7-7" />
+  </svg>
+  <span class="jw-back-label">Back</span>
+</a>
+
+<style>
+  .jw-back {
+    position: fixed;
+    top: 14px;
+    left: 14px;
+    z-index: 1000;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 14px 0 11px;
+    border-radius: 999px;
+    background: #0e1320;
+    border: 1px solid #c8a45c;
+    color: #c8a45c;
+    text-decoration: none;
+    box-sizing: border-box;
+    line-height: 1;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.45);
+  }
+  .jw-back-icon {
+    width: 18px;
+    height: 18px;
+    flex: 0 0 auto;
+    display: block;
+    transition: transform 0.18s ease-out;
+  }
+  .jw-back-label {
+    white-space: nowrap;
+    font: 600 13px/1 -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    letter-spacing: 0.02em;
+  }
+  .jw-back:hover, .jw-back:focus-visible {
+    background: #1a2236;
+    border-color: #e3c069;
+    color: #e3c069;
+    text-decoration: none;
+  }
+  .jw-back:hover .jw-back-icon,
+  .jw-back:focus-visible .jw-back-icon { transform: translateX(-2px); }
+  .jw-back:focus-visible {
+    outline: 2px solid #c8a45c;
+    outline-offset: 2px;
+  }
+  @media (max-width: 480px) {
+    .jw-back { top: 10px; left: 10px; height: 32px; padding: 0 12px 0 9px; }
+  }
+</style>
 </body>
 </html>
